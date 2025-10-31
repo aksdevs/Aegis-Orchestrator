@@ -1,0 +1,16 @@
+google-cloud-aiplatform>=1.35.0
+google-cloud-storage>=2.13.0
+vertexai>=0.0.1
+python-dotenv>=1.0.0
+gitpython>=3.1.40
+requests>=2.31.0
+pyyaml>=6.0.1
+google-auth>=2.23.4
+google-cloud-core>=2.3.3
+pytest>=7.4.3
+pytest-cov>=4.1.0
+black>=23.10.1
+isort>=5.12.0
+pylint>=3.0.2
+pre-commit>=3.5.0
+terraform-validate==2.8.0
