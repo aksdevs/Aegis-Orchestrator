@@ -13,9 +13,13 @@ variable "region" {
 resource "google_project_service" "services" {
   for_each = toset([
     "aiplatform.googleapis.com",
-    "compute.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "cloudbuild.googleapis.com",
     "cloudresourcemanager.googleapis.com",
-    "iam.googleapis.com"
+    "compute.googleapis.com",
+    "iam.googleapis.com",
+    "run.googleapis.com",
+    "storage.googleapis.com"
   ])
   
   service = each.key
@@ -36,12 +40,18 @@ resource "google_service_account" "app_sa" {
 resource "google_project_iam_member" "sa_roles" {
   for_each = toset([
     "roles/aiplatform.user",
+    "roles/artifactregistry.reader", 
+    "roles/cloudsql.client",
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
     "roles/storage.admin"
   ])
   
   project = var.project_id
   role    = each.key
   member  = "serviceAccount:${google_service_account.app_sa.email}"
+
+  depends_on = [google_service_account.app_sa]
 }
 
 # Cloud Storage bucket for artifacts
@@ -56,15 +66,26 @@ resource "google_storage_bucket" "artifacts" {
   }
 }
 
-# Vertex AI Model Registry
-resource "google_artifact_registry_repository" "model_registry" {
-  provider = google-beta
+# Artifact Registry for Docker images
+resource "google_artifact_registry_repository" "docker_repo" {
+  location      = var.region
+  repository_id = "aegis-repo"
+  description   = "Repository for Aegis Orchestrator Docker images"
+  format        = "DOCKER"
+  project       = var.project_id
 
+  depends_on = [google_project_service.services]
+}
+
+# Vertex AI Model Registry  
+resource "google_artifact_registry_repository" "model_registry" {
   location      = var.region
   repository_id = "aegis-models"
   description   = "Repository for Aegis Orchestrator ML models"
-  format        = "DOCKER"
+  format        = "PYTHON"
   project       = var.project_id
+
+  depends_on = [google_project_service.services]
 }
 
 # Cloud Run service for the application
@@ -74,10 +95,24 @@ resource "google_cloud_run_service" "app" {
   project  = var.project_id
 
   template {
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale" = "10"
+        "autoscaling.knative.dev/minScale" = "0"
+        "run.googleapis.com/execution-environment" = "gen2"
+      }
+    }
+    
     spec {
       service_account_name = google_service_account.app_sa.email
+      timeout_seconds      = 3600
+      
       containers {
-        image = "gcr.io/${var.project_id}/aegis-orchestrator:latest"
+        image = "${var.region}-docker.pkg.dev/${var.project_id}/aegis-repo/aegis-orchestrator:latest"
+        
+        ports {
+          container_port = 8080
+        }
         
         env {
           name  = "PROJECT_ID"
@@ -88,11 +123,20 @@ resource "google_cloud_run_service" "app" {
           name  = "REGION"
           value = var.region
         }
+        
+        env {
+          name  = "WORKSPACE_DIR"
+          value = "/workspace"
+        }
 
         resources {
           limits = {
             cpu    = "1000m"
             memory = "2Gi"
+          }
+          requests = {
+            cpu    = "500m"
+            memory = "1Gi"
           }
         }
       }
@@ -103,6 +147,12 @@ resource "google_cloud_run_service" "app" {
     percent         = 100
     latest_revision = true
   }
+
+  depends_on = [
+    google_artifact_registry_repository.docker_repo,
+    google_service_account.app_sa,
+    google_project_service.services
+  ]
 }
 
 # Allow unauthenticated access to the Cloud Run service
@@ -116,17 +166,26 @@ resource "google_cloud_run_service_iam_member" "public" {
 
 # Outputs
 output "service_url" {
-  value = google_cloud_run_service.app.status[0].url
+  description = "URL of the deployed Cloud Run service"
+  value       = google_cloud_run_service.app.status[0].url
 }
 
 output "service_account_email" {
-  value = google_service_account.app_sa.email
+  description = "Email of the service account"
+  value       = google_service_account.app_sa.email
 }
 
 output "artifact_bucket" {
-  value = google_storage_bucket.artifacts.name
+  description = "Name of the GCS bucket for artifacts"
+  value       = google_storage_bucket.artifacts.name
+}
+
+output "docker_registry" {
+  description = "Docker registry URL"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/aegis-repo"
 }
 
 output "model_registry" {
-  value = google_artifact_registry_repository.model_registry.name
+  description = "ML model registry name"
+  value       = google_artifact_registry_repository.model_registry.name
 }

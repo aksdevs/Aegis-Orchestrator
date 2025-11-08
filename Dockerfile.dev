@@ -1,0 +1,39 @@
+# ==============================================================================
+# DEVELOPMENT DOCKERFILE - Optimized for Speed
+# ==============================================================================
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install production requirements only (much faster)
+COPY requirements-prod.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements-prod.txt
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Expose port
+EXPOSE 8080
+
+# Quick health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=2s --retries=1 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run in server mode
+CMD ["python", "main.py", "--server"]

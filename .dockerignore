@@ -1,0 +1,88 @@
+# Version control
+.git/
+.github/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation and examples
+*.md
+docs/
+examples/
+*.txt.bak
+
+# Test files and coverage
+tests/
+test_*.py
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+.cache/
+
+# Development tools
+.pre-commit-config.yaml
+.flake8
+.pylintrc
+setup.cfg
+pyproject.toml
+
+# Deployment docs (not needed in container)
+DEPLOYMENT_FIXES.md
+PROJECT_COMPLETION.md
+TEST_FIXES_SUMMARY.md
