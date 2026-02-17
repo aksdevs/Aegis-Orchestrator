@@ -145,9 +145,9 @@ def print_workflow_info():
     print(f"   • Fixer: {fixer_config.model_name}")
     print(f"   • Reviewer: {reviewer_config.model_name}")
     
-    print("\n🌍 Deployment: Google Cloud Vertex AI")
-    print(f"   • Project: {config.project_id}")
-    print(f"   • Region: {config.location}")
+    print("\n🌍 LLM Provider: Ollama (Local)")
+    print(f"   • Base URL: {config.ollama_base_url}")
+    print(f"   • Model: {config.ollama_model}")
 
 def main():
     """Main example execution."""
@@ -171,9 +171,9 @@ def main():
         print_workflow_info()
         return
     
-    # Note: This is a mock example since we don't have real Vertex AI credentials
+    # Note: This is a mock example since we need a running Ollama instance
     print("📝 NOTE: This is a demonstration of the workflow structure.")
-    print("🔑 To run with real AI models, configure Google Cloud credentials.")
+    print("🔑 To run with real AI models, ensure Ollama is running locally.")
     print()
     
     print_workflow_info()

@@ -1,22 +1,22 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 from agents.researcher_agent import ResearcherAgent
 
 class TestResearcherAgent(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method."""
-        self.project_id = "test-project"
-        self.location = "us-central1"
-        self.researcher_agent = ResearcherAgent(self.project_id, self.location)
+        self.model_name = "llama3.1"
+        self.base_url = "http://localhost:11434"
+        with patch('agents.researcher_agent.ChatOllama'):
+            self.researcher_agent = ResearcherAgent(self.model_name, self.base_url)
 
     def test_initialization(self):
         """Test that the ResearcherAgent initializes correctly."""
         self.assertIsNotNone(self.researcher_agent)
-        self.assertEqual(self.researcher_agent.project_id, self.project_id)
-        self.assertEqual(self.researcher_agent.location, self.location)
+        self.assertEqual(self.researcher_agent.model_name, self.model_name)
+        self.assertEqual(self.researcher_agent.base_url, self.base_url)
 
-    @patch('agents.researcher_agent.aiplatform')
-    def test_research_vulnerability(self, mock_aiplatform):
+    def test_research_vulnerability(self):
         """Test vulnerability research functionality."""
         # Setup test data
         test_vulnerability = {
@@ -25,20 +25,19 @@ class TestResearcherAgent(unittest.TestCase):
             "cve": "CVE-2025-1234",
             "severity": "HIGH"
         }
-        
-        # Setup mock model and endpoint
-        mock_model = Mock()
-        mock_endpoint = Mock()
-        mock_model.deploy.return_value = mock_endpoint
-        mock_aiplatform.Model.list.return_value = [mock_model]
-        
+
+        # Setup mock LLM response
+        mock_response = MagicMock()
+        mock_response.content = "Detailed vulnerability analysis..."
+        self.researcher_agent.llm = MagicMock()
+        self.researcher_agent.llm.invoke.return_value = mock_response
+
         # Test vulnerability research
         findings = self.researcher_agent.research_vulnerability(test_vulnerability)
-        
-        # Verify correct model usage
-        mock_aiplatform.Model.list.assert_called_once()
-        mock_model.deploy.assert_called_once()
-        
+
+        # Verify LLM was invoked
+        self.researcher_agent.llm.invoke.assert_called_once()
+
         # Verify research findings
         self.assertIsInstance(findings, dict)
         self.assertEqual(findings["vulnerability_id"], test_vulnerability["id"])
@@ -46,8 +45,7 @@ class TestResearcherAgent(unittest.TestCase):
         self.assertIn("impact", findings)
         self.assertIn("remediation_approaches", findings)
 
-    @patch('agents.researcher_agent.aiplatform')
-    def test_analyze_fix_approaches(self, mock_aiplatform):
+    def test_analyze_fix_approaches(self):
         """Test fix approaches analysis functionality."""
         # Setup test data
         test_findings = {
@@ -56,20 +54,19 @@ class TestResearcherAgent(unittest.TestCase):
             "impact": "Critical data exposure",
             "affected_components": ["database", "api"]
         }
-        
-        # Setup mock model and endpoint
-        mock_model = Mock()
-        mock_endpoint = Mock()
-        mock_model.deploy.return_value = mock_endpoint
-        mock_aiplatform.Model.list.return_value = [mock_model]
-        
+
+        # Setup mock LLM response
+        mock_response = MagicMock()
+        mock_response.content = "Fix approach analysis..."
+        self.researcher_agent.llm = MagicMock()
+        self.researcher_agent.llm.invoke.return_value = mock_response
+
         # Test fix analysis
         approaches = self.researcher_agent.analyze_fix_approaches(test_findings)
-        
-        # Verify model usage
-        mock_aiplatform.Model.list.assert_called_once()
-        mock_model.deploy.assert_called_once()
-        
+
+        # Verify LLM was invoked
+        self.researcher_agent.llm.invoke.assert_called_once()
+
         # Verify analysis results
         self.assertIsInstance(approaches, list)
         self.assertTrue(len(approaches) > 0)
@@ -78,8 +75,7 @@ class TestResearcherAgent(unittest.TestCase):
             self.assertIn("complexity", approach)
             self.assertIn("risk_level", approach)
 
-    @patch('agents.researcher_agent.aiplatform')
-    def test_generate_fix_recommendation(self, mock_aiplatform):
+    def test_generate_fix_recommendation(self):
         """Test fix recommendation generation."""
         # Setup test data
         test_findings = {
@@ -99,22 +95,21 @@ class TestResearcherAgent(unittest.TestCase):
                 "risk_level": "low"
             }
         ]
-        
-        # Setup mock model and endpoint
-        mock_model = Mock()
-        mock_endpoint = Mock()
-        mock_model.deploy.return_value = mock_endpoint
-        mock_aiplatform.Model.list.return_value = [mock_model]
-        
+
+        # Setup mock LLM response
+        mock_response = MagicMock()
+        mock_response.content = "Recommendation details..."
+        self.researcher_agent.llm = MagicMock()
+        self.researcher_agent.llm.invoke.return_value = mock_response
+
         # Test recommendation generation
         recommendation = self.researcher_agent.generate_fix_recommendation(
             test_findings, test_approaches
         )
-        
-        # Verify model usage
-        mock_aiplatform.Model.list.assert_called_once()
-        mock_model.deploy.assert_called_once()
-        
+
+        # Verify LLM was invoked
+        self.researcher_agent.llm.invoke.assert_called_once()
+
         # Verify recommendation
         self.assertIsInstance(recommendation, dict)
         self.assertIn("recommended_approach", recommendation)

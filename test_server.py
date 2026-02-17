@@ -43,8 +43,7 @@ def test_server_functions_exist():
             'agents.orchestrator_app': Mock(),
             'langchain_core.messages': Mock(),
             'langgraph.graph': Mock(),
-            'vertexai': Mock(),
-            'google.cloud': Mock(),
+            'langchain_ollama': Mock(),
             'git': Mock()
         }):
             import main

@@ -7,10 +7,7 @@ on:
     branches: [main]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: us-central1
   SERVICE_NAME: aegis-orchestrator
-  IMAGE: aegis-orchestrator
 
 jobs:
   test:
@@ -41,16 +38,16 @@ jobs:
 
       - name: Run unit tests
         env:
-          PROJECT_ID: test-project
-          REGION: us-central1
+          OLLAMA_BASE_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3.1
         run: |
           source .venv/bin/activate
           python -m unittest discover tests/ -v
 
       - name: Run integration tests
         env:
-          PROJECT_ID: test-project
-          REGION: us-central1
+          OLLAMA_BASE_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3.1
         run: |
           source .venv/bin/activate
           python test_workflow.py
@@ -73,86 +70,3 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
-
-  build-and-deploy:
-    needs: [test, security-scan]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup GCloud Auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-          project_id: ${{ env.PROJECT_ID }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
-
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/aegis-repo/${{ env.IMAGE }}:${{ github.sha }} \
-            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/aegis-repo/${{ env.IMAGE }}:latest \
-            -f Dockerfile .
-
-      - name: Push Docker image
-        run: |
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/aegis-repo/${{ env.IMAGE }}:${{ github.sha }}
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/aegis-repo/${{ env.IMAGE }}:latest
-
-      - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/aegis-repo/${{ env.IMAGE }}:${{ github.sha }} \
-            --platform managed \
-            --region ${{ env.REGION }} \
-            --allow-unauthenticated \
-            --set-env-vars PROJECT_ID=${{ env.PROJECT_ID }},REGION=${{ env.REGION }} \
-            --memory 2Gi \
-            --cpu 1 \
-            --timeout 3600 \
-            --max-instances 10 \
-            --min-instances 0
-
-  infrastructure:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup GCloud Auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-          project_id: ${{ env.PROJECT_ID }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-
-      - name: Terraform Init
-        run: |
-          cd infra/configuration/terraform
-          terraform init
-
-      - name: Terraform Plan
-        run: |
-          cd infra/configuration/terraform
-          terraform plan -var="project_id=${{ env.PROJECT_ID }}" -var="region=${{ env.REGION }}"
-
-      - name: Terraform Apply
-        run: |
-          cd infra/configuration/terraform
-          terraform apply -auto-approve -var="project_id=${{ env.PROJECT_ID }}" -var="region=${{ env.REGION }}"

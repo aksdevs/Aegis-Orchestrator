@@ -1,12 +1,5 @@
 # Production requirements for Aegis Orchestrator
 
-# Core Google Cloud dependencies
-google-cloud-aiplatform>=1.35.0
-google-cloud-storage>=2.13.0
-vertexai>=0.0.1
-google-auth>=2.23.4
-google-cloud-core>=2.3.3
-
 # Application dependencies
 python-dotenv>=1.0.0
 gitpython>=3.1.40
@@ -16,7 +9,7 @@ pyyaml>=6.0.1
 # LangChain and LangGraph for AI workflows
 langchain>=0.1.0
 langchain-core>=0.1.0
-langchain-google-vertexai>=0.1.0
+langchain-ollama>=0.1.0
 langgraph>=0.1.0
 langsmith>=0.0.80
 

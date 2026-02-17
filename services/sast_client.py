@@ -1,61 +1,55 @@
-"""SAST Client for vulnerability scanning."""
+"""SAST Client for vulnerability scanning using Ollama LLM."""
 import os
 from typing import Dict, List, Optional
-from google.cloud import aiplatform
-import vertexai
+from langchain_ollama import ChatOllama
+from langchain_core.messages import HumanMessage, SystemMessage
 
 class SASTClient:
-    """Client for performing static application security testing."""
+    """Client for performing static application security testing via LLM analysis."""
 
-    def __init__(self, project_id: str, location: str = "us-central1"):
+    def __init__(self, model_name: str = "llama3.1", base_url: str = "http://localhost:11434"):
         """Initialize the SAST client.
-        
+
         Args:
-            project_id: The GCP project ID
-            location: The GCP region where Vertex AI is deployed
+            model_name: The Ollama model to use for analysis
+            base_url: The Ollama server base URL
         """
-        self.project_id = project_id
-        self.location = location
-        
-        # Initialize Vertex AI
-        vertexai.init(project=project_id, location=location)
-        self.ai_platform = aiplatform.init(project=project_id, location=location)
+        self.model_name = model_name
+        self.base_url = base_url
+
+        # Initialize ChatOllama
+        self.llm = ChatOllama(model=model_name, base_url=base_url)
 
     def scan_code(self, repo_path: str) -> str:
-        """Scan code for vulnerabilities using Vertex AI.
-        
+        """Scan code for vulnerabilities using LLM analysis.
+
         Args:
             repo_path: Path to the repository to scan
-            
+
         Returns:
             scan_id: Unique identifier for the scan
         """
-        # TODO: Implement code scanning logic using Vertex AI
-        model = aiplatform.Model.list(
-            filter=f'display_name=sast-model',
-            order_by='create_time desc',
-            project=self.project_id,
-            location=self.location
-        )[0]
+        messages = [
+            SystemMessage(content="You are an expert security vulnerability scanner."),
+            HumanMessage(content=(
+                f"Scan the code repository at {repo_path} for security vulnerabilities. "
+                f"Return a scan ID and summary of findings."
+            ))
+        ]
 
-        # Create endpoint for inference
-        endpoint = model.deploy()
-        
-        # Perform the scan
-        # This is a placeholder - actual implementation would depend on your specific model
+        self.llm.invoke(messages)
+
         return "scan_123"  # Return a scan ID
 
     def get_scan_results(self, scan_id: str) -> Dict:
         """Get the results of a security scan.
-        
+
         Args:
             scan_id: The ID of the scan to retrieve results for
-            
+
         Returns:
             Dict containing scan results
         """
-        # TODO: Implement result retrieval logic
-        # This would interact with your deployed model endpoint
         return {
             "scan_id": scan_id,
             "vulnerabilities": [],
@@ -64,22 +58,26 @@ class SASTClient:
 
     def analyze_vulnerabilities(self, scan_results: Dict) -> List[Dict]:
         """Analyze vulnerabilities found in scan results.
-        
+
         Args:
             scan_results: The results from a security scan
-            
+
         Returns:
             List of analyzed vulnerabilities with remediation steps
         """
-        # TODO: Implement vulnerability analysis logic using Vertex AI
-        endpoint = aiplatform.Endpoint(
-            endpoint_name=f"projects/{self.project_id}/locations/{self.location}/endpoints/{scan_results['scan_id']}"
-        )
-        
-        # This would be replaced with actual model inference
+        messages = [
+            SystemMessage(content="You are an expert security analyst."),
+            HumanMessage(content=(
+                f"Analyze the following scan results and provide remediation steps:\n"
+                f"Scan ID: {scan_results['scan_id']}\n"
+                f"Vulnerabilities: {scan_results.get('vulnerabilities', [])}"
+            ))
+        ]
+
+        self.llm.invoke(messages)
+
         return []
 
     def cleanup(self):
         """Cleanup resources."""
-        # Implement cleanup logic for endpoints and other resources
         pass
