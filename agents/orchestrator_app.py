@@ -33,7 +33,7 @@ class OrchestratorApp:
         Args:
             config_dict: Optional configuration dictionary for backward compatibility
         """
-        # Validate configuration
+        # Validate configuration (no-op for Ollama, kept for interface compatibility)
         config.validate()
         
         # Set up logging
@@ -180,7 +180,9 @@ class OrchestratorApp:
                 "security_researcher": config.get_model_config(ModelType.SECURITY_RESEARCHER).model_name,
                 "code_fixer": config.get_model_config(ModelType.CODE_FIXER).model_name,
                 "code_reviewer": config.get_model_config(ModelType.CODE_REVIEWER).model_name
-            }
+            },
+            "llm_provider": "Ollama",
+            "ollama_base_url": config.ollama_base_url
         }
 
     def cleanup(self) -> None:

@@ -10,8 +10,8 @@ class TestOrchestratorApp(unittest.TestCase):
         """Set up test fixtures before each test method."""
         # Mock environment variables for configuration
         self.env_patcher = patch.dict(os.environ, {
-            'PROJECT_ID': 'test-project',
-            'REGION': 'us-central1',
+            'OLLAMA_BASE_URL': 'http://localhost:11434',
+            'OLLAMA_MODEL': 'llama3.1',
             'WORKSPACE_DIR': '/test/workspace'
         })
         self.env_patcher.start()
