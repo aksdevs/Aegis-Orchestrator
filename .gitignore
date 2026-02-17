@@ -214,3 +214,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Local LLM & Ollama
+.ollama/
+ollama_data/
+ollama_models/
+ollama.log
+*.ollama
+models/
+*.gguf
+*.bin
+
+# Google Cloud (no longer used)
+.gcp/
+google-credentials.json
+gcp-credentials.json
+
+# Local development artifacts
+*.local
+.local/
+local_config.yaml
+
+# Claude artifacts
+.claude/

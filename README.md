@@ -1,6 +1,6 @@
 # Aegis Orchestrator - AI-Powered Security Automation Platform
 
-🔒 **An intelligent security vulnerability remediation system built with LangGraph and LangChain, powered by Google Cloud Vertex AI.**
+🔒 **An intelligent security vulnerability remediation system built with LangGraph and LangChain, powered by local LLM (Ollama).**
 
 ## 🚀 Overview
 
@@ -21,11 +21,11 @@ Built on LangGraph for sophisticated AI workflow orchestration:
 - **Error Handling**: Robust error recovery and state rollback
 - **Parallel Processing**: Concurrent vulnerability analysis
 
-### AI Models (Google Cloud Vertex AI)
-- **Scanner Model**: `gemini-pro` for vulnerability detection
-- **Researcher Model**: `gemini-pro` for security research
-- **Fixer Model**: `gemini-pro` for code remediation
-- **Reviewer Model**: `gemini-pro` for fix validation
+### AI Models (Local LLM - Ollama)
+- **Scanner Model**: `llama2` for vulnerability detection
+- **Researcher Model**: `llama2` for security research
+- **Fixer Model**: `mistral` for code remediation
+- **Reviewer Model**: `mistral` for fix validation
 
 ### Core Components
 
@@ -59,7 +59,7 @@ Aegis-Orchestrator/
 │   ├── workflow_nodes.py          # AI-powered workflow nodes
 │   └── simplified_workflow.py     # Testing workflow
 ├── config/
-│   └── settings.py                # Vertex AI & LangChain config
+│   └── settings.py                # Ollama LLM & LangChain config
 ├── services/
 │   ├── __init__.py
 │   ├── git_handler.py             # Git operations
@@ -117,7 +117,7 @@ Aegis-Orchestrator/
 
 ### Prerequisites
 - Python 3.8+
-- Google Cloud Project with Vertex AI enabled
+- Ollama running locally (for LLM inference)
 - Git repository access
 - Docker (optional, for containerized deployment)
 
@@ -135,25 +135,35 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure environment variables
-export PROJECT_ID="your-gcp-project-id"
-export REGION="us-central1"
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/service-account.json"
+# Start Ollama service (ensure Ollama is running)
+# On Linux/Mac:
+ollama serve
+
+# On Windows, Ollama runs as a service. Make sure it's started.
+
+# Pull required models (in another terminal):
+ollama pull llama2
+ollama pull mistral
 
 # Test the workflow
 python test_workflow.py
 ```
 
-### Google Cloud Configuration
+### Local LLM Configuration
 
 ```bash
-# Setup Google Cloud credentials
-gcloud auth application-default login
+# Ensure Ollama is installed and running
+# Download from: https://ollama.ai
 
-# Enable required APIs
-gcloud services enable aiplatform.googleapis.com
-gcloud services enable storage-api.googleapis.com
-gcloud services enable cloudbuild.googleapis.com
+# Start Ollama service
+ollama serve
+
+# Pull required models (in a separate terminal)
+ollama pull llama2     # For vulnerability scanning and research
+ollama pull mistral    # For code fixing and review
+
+# Verify models are available
+ollama list
 ```
 
 ## 🖥️ Usage
@@ -226,27 +236,30 @@ python tests/test_integration_workflow.py
 
 | Vulnerability | CWE IDs | Severity | AI Model |
 |---------------|---------|----------|----------|
-| SQL Injection | CWE-89 | High | Gemini-Pro |
-| Cross-Site Scripting | CWE-79 | Medium-High | Gemini-Pro |
-| Command Injection | CWE-78 | High | Gemini-Pro |
-| Path Traversal | CWE-22 | Medium | Gemini-Pro |
-| Insecure Deserialization | CWE-502 | High | Gemini-Pro |
-| Authentication Bypass | CWE-287 | High | Gemini-Pro |
-| Authorization Issues | CWE-285 | Medium-High | Gemini-Pro |
-| Crypto Weaknesses | CWE-327 | Medium | Gemini-Pro |
-
-## 🌐 Deployment
-
-### Cloud Run (Google Cloud)
-
+| SQL Injection | CWE-89 | High | Llama2/Mistral |
+| Cross-Site Scripting | CWE-79 | Medium-High | Llama2/Mistral |
+| Command Injection | CWE-78 | High | Llama2/Mistral |
+| Path Traversal | CWE-22 | Medium | Llama2/Mistral |
+| Insecure Deserialization | CWE-502 | High | Llama2/Mistral |
+| Authentication Bypass | CWE-287 | High | Llama2/Mistral |
+| Authorization Issues | CWE-285 | Medium-High | Llama2/Mistral |
+| Crypto Weaknesses | CWE-327 | Medium | Llama2/Mistral
 ```bash
-# Build and deploy
-gcloud builds submit --tag gcr.io/PROJECT-ID/aegis-orchestrator
-gcloud run deploy --image gcr.io/PROJECT-ID/aegis-orchestrator --platform managed
-```
+# Build Docker image
+docker build -f Dockerfile.dev -t aegis-orchestrator:latest .
 
-### Terraform Infrastructure
+# Run container with Ollama backend
+docker run -d \
+  --name ollama \
+  -p 11434:11434 \
+  ollama/ollama:latest
 
+# Run Aegis Orchestrator
+docker run -d \
+  --name aegis-orchestrator \
+  -p 8000:8000 \
+  --network host \
+  aegis-orchestrator:latest
 ```bash
 cd infra/configuration/terraform
 terraform init
@@ -272,9 +285,9 @@ Automated deployment pipeline with:
 - **False Positive Rate**: <10%
 
 ### Scalability
-- Horizontal scaling via Cloud Run
+- Local LLM inference with Ollama
 - Concurrent repository processing
-- Vertex AI model auto-scaling
+- Multi-model support (Llama2, Mistral, and more)
 - Distributed workflow execution
 
 ## 🔐 Security & Compliance
